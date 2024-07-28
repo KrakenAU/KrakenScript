@@ -55,13 +55,20 @@ class Lexer:
         while self.position < len(self.source_code):
             if self.match(r'\s+'):
                 self.skip_whitespace()
-            elif self.match(r'//'):
+            elif self.source_code[self.position:self.position+2] == '//':
+                # Ignore everything after // until the end of the line
+                while self.position < len(self.source_code) and self.source_code[self.position] != '\n':
+                    self.position += 1
+
                 self.debug_log("Found single-line comment", token_type=TokenType.COMMENT)
-                self.tokenize_single_line_comment(tokens)
+                self.skip_whitespace()  # Skip any whitespace after the comment
             elif self.match(r'\(\*'):
-                self.debug_log("Found comment", token_type=TokenType.COMMENT)
+                self.debug_log("Found multi-line comment", token_type=TokenType.COMMENT)
                 self.tokenize_comment(tokens)
-            elif self.match(r'@ink|let|const|if|else|for|return'):
+            elif self.match(r'@ink'):
+                self.debug_log(f"Found @ink keyword", token_type=TokenType.KEYWORD)
+                tokens.append(self.create_token(TokenType.KEYWORD, self.current_match))
+            elif self.match(r'let|const|if|else|for|return|print'):
                 self.debug_log(f"Found keyword '{self.current_match}'", token_type=TokenType.KEYWORD)
                 tokens.append(self.create_token(TokenType.KEYWORD, self.current_match))
             elif self.match(r'true|false'):
@@ -140,56 +147,19 @@ class Lexer:
             if self.source_code[self.position] == '"':
                 self.position += 1
                 self.column += 1
+                # Include the quotes in the token value
                 tokens.append(self.create_token(TokenType.STRING, self.source_code[start:self.position]))
                 return
-            elif self.source_code[self.position:self.position+2] == '{{':
-                if start < self.position:
-                    tokens.append(self.create_token(TokenType.STRING, self.source_code[start:self.position]))
-                self.position += 2
-                self.column += 2
-                interp_start = self.position
-                interp_depth = 1
-                while self.position < len(self.source_code) and interp_depth > 0:
-                    if self.source_code[self.position:self.position+2] == '{{':
-                        interp_depth += 1
-                        self.position += 2
-                        self.column += 2
-                    elif self.source_code[self.position:self.position+2] == '}}':
-                        interp_depth -= 1
-                        self.position += 2
-                        self.column += 2
-                    else:
-                        if self.source_code[self.position] == '\n':
-                            self.line += 1
-                            self.column = 1
-                        else:
-                            self.column += 1
-                        self.position += 1
-                if interp_depth > 0:
-                    raise SyntaxError(f"Unterminated string interpolation starting at line {self.line}, column {self.column}. Expected '}}' to close the interpolation.")
-                tokens.append(self.create_token(TokenType.IDENTIFIER, self.source_code[interp_start:self.position-2]))
-                start = self.position
+            elif self.source_code[self.position] == '\n':
+                self.line += 1
+                self.column = 1
             else:
-                if self.source_code[self.position] == '\n':
-                    self.line += 1
-                    self.column = 1
-                else:
-                    self.column += 1
-                self.position += 1
+                self.column += 1
+            self.position += 1
+        
         raise SyntaxError(f"Unterminated string starting at line {self.line}, column {self.column}")
 
-    def tokenize_single_line_comment(self, tokens):
-        start = self.position
-        while self.position < len(self.source_code) and self.source_code[self.position] != '\n':
-            self.position += 1
-            self.column += 1
-        comment = self.source_code[start:self.position]
-        tokens.append(self.create_token(TokenType.COMMENT, comment))
-
     def create_token(self, token_type, value):
-        if token_type == TokenType.STRING:
-            # Strip quotes for string tokens
-            value = value[1:-1]
         token = Token(token_type, value, self.line, self.column)
         if isinstance(value, str):
             lines = value.split('\n')
@@ -197,10 +167,10 @@ class Lexer:
                 self.line += len(lines) - 1
                 self.column = len(lines[-1]) + 1
             else:
-                self.column += len(value) + (2 if token_type == TokenType.STRING else 0)
+                self.column += len(value)
         else:
             self.column += len(str(value))
-        self.position += len(str(value)) + (2 if token_type == TokenType.STRING else 0)
+        self.position += len(str(value))
         return token
 
 def lex(source_code, debug=False):
@@ -224,3 +194,6 @@ if __name__ == "__main__":
     print("Tokenizing with debug output:")
     tokens = lex(sample_code, debug=True)
     print("Tokenization complete.")
+
+    for token in tokens:
+        print(f"{token.line}:{token.column} {token.type}: {repr(token.value)}")
