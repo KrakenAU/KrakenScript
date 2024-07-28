@@ -8,6 +8,10 @@
   <strong>Dive into the abyss of coding with KrakenScript!</strong>
 </p>
 
+## ⚠️ Important Note
+
+**KrakenScript is a new and experimental language.** It's currently in early development and may not work as expected. Features, syntax, and functionality are subject to change. Use at your own risk and be prepared for unexpected behavior as we continue to refine and stabilize the language.
+
 <p align="center">
   <a href="#ocean-overview">Overview</a> •
   <a href="#-key-features">Features</a> •
@@ -16,6 +20,7 @@
   <a href="#-contributing">Contributing</a> •
   <a href="#-license">License</a>
 </p>
+
 
 ## :ocean: Overview
 
@@ -69,13 +74,13 @@ KrakenScript is primarily a solo voyage through the depths of coding, but fellow
 - Offer a treasure map (documentation improvements) to help others navigate these waters.
 - Share tales of your KrakenScript adventures (examples and use cases) to inspire fellow coders.
 
-Before diving in, consult our [Seafarer's Guide](CONTRIBUTING.md) to understand how you can safely approach the Kraken and contribute to its journey.
+Before diving in, consult our [Contributing Guide](CONTRIBUTING.md) to understand how you can safely approach the Kraken and contribute to its journey.
 
 Remember, while the Kraken appreciates the company, it swims alone in the vast ocean of code development.
 
 ## 📜 License
 
-KrakenScript is released under the MIT License. Consult the LICENSE file for the full legal text.
+KrakenScript is released under the MIT License. Consult the [LICENSE](LICENSE) file for the full legal text.
 
 ---
 

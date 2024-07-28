@@ -1,4 +1,4 @@
-# 🐙 Seafarer's Guide to KrakenScript
+# 🐙 Contributing Guide 
 
 Ahoy, brave code sailor! While the Kraken swims its solitary path through the vast ocean of development, it welcomes fellow seafarers to share in its journey. Here's how you can contribute without disturbing the ancient beast's slumber.
 
