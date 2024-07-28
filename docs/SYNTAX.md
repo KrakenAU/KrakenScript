@@ -4,12 +4,24 @@ Welcome, brave code divers, to the mysterious depths of KrakenScript! This guide
 
 ## 🌊 Table of Contents
 
-1. [Comments](#-comments)
-2. [Variables and Data Types](#-variables-and-data-types)
-3. [Functions](#-functions)
-4. [Control Structures](#-control-structures)
-5. [Error Handling](#-error-handling) (WIP)
-6. [Modules and Imports](#-modules-and-imports) (WIP)
+- [🐙 KrakenScript Syntax Guide](#-krakenscript-syntax-guide)
+  - [🌊 Table of Contents](#-table-of-contents)
+  - [🐡 Comments](#-comments)
+  - [🦀 Variables and Data Types](#-variables-and-data-types)
+    - [Variable Declaration](#variable-declaration)
+    - [Data Types](#data-types)
+  - [🦑 Functions](#-functions)
+    - [Function Declaration](#function-declaration)
+    - [Function Examples](#function-examples)
+    - [Default Parameters](#default-parameters)
+  - [🐋 Control Structures](#-control-structures)
+    - [If-Else Currents](#if-else-currents)
+    - [For Loops](#for-loops)
+  - [🐠 Operators](#-operators)
+  - [🦈 String Interpolation](#-string-interpolation)
+  - [🐳 Block Delimitation](#-block-delimitation)
+  - [🦈 Error Handling (WIP)](#-error-handling-wip)
+  - [🐠 Modules and Imports (WIP)](#-modules-and-imports-wip)
 
 ## 🐡 Comments
 
@@ -22,6 +34,12 @@ Float your thoughts in bubble comments:
    multi-line
    comment,
    like a jellyfish drifting in the current *)
+```
+
+KrakenScript also supports single-line comments using double forward slashes:
+
+```
+// This is a single-line comment
 ```
 
 Comments can be placed anywhere in your code and are ignored by the KrakenScript interpreter.
@@ -62,33 +80,6 @@ let depth = 1000;  (* Type inferred as Int *)
 let depth: Float = 1000.0;  (* Explicitly typed as Float *)
 ```
 
-### Type Conversion
-
-Convert between types using built-in functions:
-
-```
-let depth_str: String = String(depth);  (* Int to String *)
-let temp_int: Int = Int(temperature);   (* Float to Int (truncates) *)
-let is_deep: Bool = Bool(depth);        (* Non-zero Int to Bool (true) *)
-```
-
-### Variable Scope
-
-Variables are block-scoped within functions and control structures:
-
-```
-@ink example() ~
-    let x = 10;
-    if true ~
-        let y = 20;
-        print(x);  (* Valid: x is in scope *)
-        print(y);  (* Valid: y is in current block *)
-    ~
-    print(x);  (* Valid: x is still in scope *)
-    print(y);  (* Invalid: y is out of scope *)
-~
-```
-
 ## 🦑 Functions
 
 ### Function Declaration
@@ -112,17 +103,8 @@ Functions must specify parameter types and return type.
 ~
 
 @ink greet(creature: String) -> String ~
-    return "Greetings, {creature} of the deep!";
+    return "Greetings, {{creature}} of the deep!";
 ~
-```
-
-### Function Calls
-
-Call functions by name with arguments:
-
-```
-let pressure: Float = calculate_pressure(5000);
-let message: String = greet("Colossal Squid");
 ```
 
 ### Default Parameters
@@ -131,27 +113,11 @@ Functions can have default parameter values:
 
 ```
 @ink explore(depth: Int, time: Int = 60) -> String ~
-    return "Explored {depth}m for {time} minutes";
+    return "Explored {{depth}}m for {{time}} minutes";
 ~
 
 let result1 = explore(1000);      (* Uses default time *)
 let result2 = explore(1000, 90);  (* Overrides default time *)
-```
-
-### Return Values
-
-Functions can return early:
-
-```
-@ink check_depth(depth: Int) -> String ~
-    if depth < 0 ~
-        return "Invalid depth";
-    ~
-    if depth > 11000 ~
-        return "Too deep!";
-    ~
-    return "Depth is okay";
-~
 ```
 
 ## 🐋 Control Structures
@@ -170,42 +136,45 @@ if condition ~
 ~
 ```
 
-Conditions must evaluate to a Boolean value. The `else if` and `else` blocks are optional.
+### For Loops
 
-### If-Else Examples
+Explore the depths with for loops:
 
 ```
-let depth: Int = 5000;
-
-if depth > 6000 ~
-    print("Welcome to the abyssopelagic zone!");
-~ else if depth > 1000 ~
-    print("You're in the bathypelagic zone.");
-~ else ~
-    print("You're still in shallow waters.");
+for item in collection ~
+    (* Code block executed for each item *)
 ~
 ```
 
-### Nested If Statements
+## 🐠 Operators
 
-You can nest if statements for more complex logic:
+KrakenScript supports the following operators:
+
+- Arithmetic: `+`, `-`, `*`, `/`
+- Comparison: `<`, `>`, `<=`, `>=`, `==`, `!=`
+- Assignment: `=`
+- Logical: `&&` (and), `||` (or), `!` (not)
+
+## 🦈 String Interpolation
+
+Embed expressions within strings using double curly braces:
 
 ```
-let temperature: Float = 4.5;
-let pressure: Float = 500.0;
+let depth = 1000;
+let message = "We are {{depth}} meters below the surface.";
+```
 
-if depth > 1000 ~
-    if temperature < 4.0 ~
-        if pressure > 400.0 ~
-            print("Cold and high-pressure deep zone detected!");
-        ~ else ~
-            print("Cold but moderate-pressure zone detected.");
-        ~
+## 🐳 Block Delimitation
+
+KrakenScript uses the tilde (`~`) for block delimitation:
+
+```
+@ink deep_dive(depth: Int) ~
+    if depth > 1000 ~
+        print("Entering the midnight zone!");
     ~ else ~
-        print("Warm deep zone detected.");
+        print("Still in the twilight zone.");
     ~
-~ else ~
-    print("Shallow waters.");
 ~
 ```
 

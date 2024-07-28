@@ -21,7 +21,6 @@
   <a href="#-license">License</a>
 </p>
 
-
 ## :ocean: Overview
 
 KrakenScript is a mesmerizing, ocean-inspired programming language that wraps its tentacles around your imagination. Designed for adventurous developers ready to plunge into the depths of creative coding, KrakenScript transforms the art of programming into an exhilarating underwater expedition.
@@ -30,7 +29,7 @@ KrakenScript is a mesmerizing, ocean-inspired programming language that wraps it
 
 - 🐙 **Tentacle-based Syntax**: Craft elegant code structures with the graceful `~`
 - 🖋️ **Ink Functions**: Unleash powerful functions with the mystical `@ink`
-- 💬 **Bubble Comments**: Encapsulate your thoughts in ethereal `(* *)` bubbles
+- 💬 **Bubble Comments**: Encapsulate your thoughts in ethereal `(* *)` bubbles or swift `//` currents
 - 🌊 **Ocean-themed Data Types**: Harness the power of the sea with unique data structures
 - 🧠 **Intuitive and Expressive**: Write code that flows as naturally as ocean currents
 
@@ -39,23 +38,23 @@ KrakenScript is a mesmerizing, ocean-inspired programming language that wraps it
 Immerse yourself in the world of KrakenScript:
 
 ```
-(* Summon the creatures of the deep *)
+// Summon the creatures of the deep
 @ink summon(creature: String) ~
-    print("From the abyss, {creature} emerges!");
+    print("From the abyss, {{creature}} emerges!");
 ~
 
 @ink main() ~
-    let depth = 20000  (* leagues under the sea *);
-    let legendary_beings = ["Kraken", "Leviathan", "Hydra"];
+    let depth = 20000  (* leagues under the sea *)
+    let legendary_beings = ["Kraken", "Leviathan", "Hydra"]
     
     for being in legendary_beings ~
-        summon(being);
+        summon(being)  // Call the summon function for each being
     ~
     
-    print("At {depth} leagues, the ocean's secrets unfold!");
+    // Reveal the depth of our journey
+    print("At {{depth}} leagues, the ocean's secrets unfold!")
 ~
 ```
-
 ## 🌿 Usage
 
 KrakenScript is still gestating in its abyssal egg. Prepare for its emergence - usage instructions are on the horizon!
