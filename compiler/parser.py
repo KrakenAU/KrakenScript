@@ -354,8 +354,10 @@ class Parser:
         token = self.peek()
         raise Exception(f"Parser error at line {token.line}, column {token.column}: "
                         f"Expected {expected}, but got {actual.type} '{actual.value}'")
+        
     def error(self, message):
-        raise Exception(f"Parser error: {message}")
+        token = self.peek()
+        raise Exception(f"Parser error at line {token.line}, column {token.column}: {message}")
 
     def log_info(self, message):
         if self.debug_mode:
@@ -458,6 +460,11 @@ fun test()
     var b = 2
     var result = add(a, b)
     print("Result of adding", a, "and", b, "is", result)
+    
+var multilinestring = "
+This is a multiline string
+hehe
+"
     
 # This is a comment
 test()

@@ -163,14 +163,16 @@ class Lexer:
         start_column = self.column
         self.advance()  # Skip the opening quote
         result = ""
-        while self.current_char is not None and self.current_char != '"':
-            if self.current_char == '\n':
+        while self.current_char is not None:
+            if self.current_char == '"':
+                self.advance()  # Skip the closing quote
+                return Token(TokenType.TEXT, result, self.line, start_column)
+            elif self.current_char == '\n':
                 self.line += 1
                 self.column = 1
             result += self.current_char
             self.advance()
-        self.advance()  # Skip the closing quote
-        return Token(TokenType.TEXT, result, self.line, start_column)
+        self.error("Unterminated string literal")
 
     def operator_or_delimiter(self):
         start_column = self.column
