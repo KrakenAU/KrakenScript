@@ -16,6 +16,8 @@ class TokenType(Enum):
     ELSE = auto()
     RETURN = auto()
     DEDENT = auto()
+    COMMENT = auto()
+
     
     # Data types
     NUM = auto()
@@ -92,6 +94,11 @@ class Lexer:
                     if self.debug_mode:
                         console.print(f"[dim]Line {self.line}: Newline detected[/dim]")
                 self.advance()
+            elif self.current_char == '#':
+                token = self.comment()
+                tokens.append(token)
+                if self.debug_mode:
+                    console.print(f"[dim]Line {self.line}: Comment detected[/dim]")
             elif self.current_char.isalpha() or self.current_char == '_':
                 token = self.identifier()
                 tokens.append(token)
@@ -154,9 +161,12 @@ class Lexer:
 
     def string(self):
         start_column = self.column
-        result = ''
         self.advance()  # Skip the opening quote
+        result = ""
         while self.current_char is not None and self.current_char != '"':
+            if self.current_char == '\n':
+                self.line += 1
+                self.column = 1
             result += self.current_char
             self.advance()
         self.advance()  # Skip the closing quote
@@ -198,6 +208,14 @@ class Lexer:
         }.get(char)
         
         return Token(token_type, char, self.line, start_column)
+    
+    def comment(self):
+        start_column = self.column
+        self.advance()  # Skip the opening quote
+        while self.current_char is not None and self.current_char != '\n':
+            self.advance()
+        self.advance()  # Skip the closing quote
+        return Token(TokenType.COMMENT, '', self.line, start_column)
 
     def error(self, message):
         raise Exception(f"Lexer error on line {self.line}, column {self.column}: {message}")
@@ -236,12 +254,24 @@ fun main()
 
 fun hello() 
     print("Hello, world!")
+    let multiline = "
+        This is a multiline string
+        with multiple lines
+    "
 
 fun add(a, b) -> num
     return a + b
 
 fun subtract(a: Float, b: Float) -> Float
     return a - b
+    
+    # This is a comment
+    
+#* testttting 
+
+fun comment_test()
+    # This is a comment
+    print("Hello, world!")
 """
     lex_and_debug(source_code)
     

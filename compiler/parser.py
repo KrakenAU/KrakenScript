@@ -42,6 +42,7 @@ class Parser:
         self.tokens = tokens
         self.current = 0
         self.debug_mode = False
+        self.function_names = set()
 
     def parse(self):
         self.log_info("Starting parsing process")
@@ -58,7 +59,10 @@ class Parser:
     def parse_statement(self):
         while self.match(TokenType.NEWLINE):
             pass  # Skip empty lines
-        
+
+        if self.match(TokenType.COMMENT):
+            return None  # Ignore comments
+
         if self.is_at_end():
             return None
         elif self.check(TokenType.IDENTIFIER) and self.peek().value == 'fun':
@@ -89,6 +93,13 @@ class Parser:
         
         self.consume(TokenType.IDENTIFIER, "Expected 'fun' keyword")
         name = self.consume(TokenType.IDENTIFIER, "Expected function name")
+        
+        # Check if the function name already exists
+        if name.value in self.function_names:
+            self.error(f"Function '{name.value}' is already defined. Function overloading is not allowed.")
+        else:
+            self.function_names.add(name.value)
+        
         node.add_child(ASTNode(ASTNodeType.IDENTIFIER, value=name.value))
         
         self.consume(TokenType.LPAREN, "Expected '(' after function name")
@@ -190,6 +201,16 @@ class Parser:
         
         self.consume(TokenType.NEWLINE, "Expected newline after return statement")
         return node
+    
+    def comment(self):
+        while self.current_char != '\n' and self.current_char is not None:
+            self.advance()
+        return Token(TokenType.COMMENT, '', self.line, self.column)
+    
+    def consume_token(self, expected_type, error_message):
+        if self.check(expected_type):
+            return self.advance()
+        self.error(error_message)
 
     def parse_expression(self):
         return self.parse_equality()
@@ -328,8 +349,13 @@ class Parser:
         if self.is_at_end():
             return self.tokens[-1]
         return self.tokens[self.current + 1]
+    
+    def error(self, expected, actual):
+        token = self.peek()
+        raise Exception(f"Parser error at line {token.line}, column {token.column}: "
+                        f"Expected {expected}, but got {actual.type} '{actual.value}'")
     def error(self, message):
-        raise Exception(f"Parser error at {self.peek()}: {message}")
+        raise Exception(f"Parser error: {message}")
 
     def log_info(self, message):
         if self.debug_mode:
@@ -337,7 +363,8 @@ class Parser:
 
     def log_debug(self, message):
         if self.debug_mode:
-            console.print(f"[bold green]DEBUG:[/bold green] {message}")
+            current_token = self.peek()
+            console.print(f"[bold green]DEBUG:[/bold green] {message} - Current token: {current_token.type} '{current_token.value}'")
 
 def parse_and_debug(tokens):
     console.print(Panel.fit("[bold cyan]Starting Parsing Process[/bold cyan]", border_style="cyan"))
@@ -431,9 +458,12 @@ fun test()
     var b = 2
     var result = add(a, b)
     print("Result of adding", a, "and", b, "is", result)
-
+    
+# This is a comment
 test()
 """
     
+    tokens = lex_and_debug(source_code)
+    ast = parse_and_debug(tokens)
     tokens = lex_and_debug(source_code)
     ast = parse_and_debug(tokens)
