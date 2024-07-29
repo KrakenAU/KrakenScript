@@ -55,16 +55,8 @@ class Lexer:
         while self.position < len(self.source_code):
             if self.match(r'\s+'):
                 self.skip_whitespace()
-            elif self.source_code[self.position:self.position+2] == '//':
-                # Ignore everything after // until the end of the line
-                while self.position < len(self.source_code) and self.source_code[self.position] != '\n':
-                    self.position += 1
-
-                self.debug_log("Found single-line comment", token_type=TokenType.COMMENT)
-                self.skip_whitespace()  # Skip any whitespace after the comment
-            elif self.match(r'\(\*'):
-                self.debug_log("Found multi-line comment", token_type=TokenType.COMMENT)
-                self.tokenize_comment(tokens)
+            elif self.source_code[self.position:self.position+2] == '(*':
+                self.tokenize_multi_line_comment(tokens)
             elif self.match(r'@ink'):
                 self.debug_log(f"Found @ink keyword", token_type=TokenType.KEYWORD)
                 tokens.append(self.create_token(TokenType.KEYWORD, self.current_match))
@@ -158,6 +150,18 @@ class Lexer:
             self.position += 1
         
         raise SyntaxError(f"Unterminated string starting at line {self.line}, column {self.column}")
+
+    def tokenize_multi_line_comment(self, tokens):
+        start = self.position
+        self.position += 2  # Skip (*
+        while self.position < len(self.source_code) - 1 and self.source_code[self.position:self.position+2] != '*)':
+            self.position += 1
+        if self.position >= len(self.source_code) - 1:
+            raise SyntaxError("Unclosed multi-line comment")
+        self.position += 2  # Skip *)
+        comment = self.source_code[start:self.position]
+        self.debug_log(f"Found multi-line comment: {comment}", token_type=TokenType.COMMENT)
+        tokens.append(self.create_token(TokenType.COMMENT, comment))
 
     def create_token(self, token_type, value):
         token = Token(token_type, value, self.line, self.column)
