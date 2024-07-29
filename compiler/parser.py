@@ -171,8 +171,10 @@ class Parser:
                     block_node.add_child(self.parse_print_statement())
                 elif self.current_token().value in ["let", "const"]:
                     block_node.add_child(self.parse_variable_declaration())
+                else:
+                    self.next_token()  # Skip unknown keywords
             else:
-                self.next_token()
+                self.next_token()  # Skip unknown tokens
         self.indent_level -= 1
         return block_node
 
@@ -288,12 +290,43 @@ class Parser:
 
 def pretty_print_ast(node, indent=0):
     indent_str = "  " * indent
-    if node.type == ASTNodeType.RETURN_STATEMENT:
-        print(f"{indent_str}{node.type}:")
+    if node.type == ASTNodeType.PROGRAM:
+        print(f"{indent_str}{node.type}")
+        for child in node.children:
+            pretty_print_ast(child, indent + 1)
+    elif node.type in [ASTNodeType.FUNCTION_DECLARATION, ASTNodeType.NON_RETURNING_FUNCTION_DECLARATION]:
+        print(f"{indent_str}{node.type}: {node.value}")
+        for child in node.children:
+            pretty_print_ast(child, indent + 1)
+    elif node.type == ASTNodeType.BLOCK:
+        print(f"{indent_str}{node.type}")
+        for child in node.children:
+            pretty_print_ast(child, indent + 1)
+    elif node.type == ASTNodeType.RETURN_STATEMENT:
+        print(f"{indent_str}{node.type}")
         if node.children:
             pretty_print_ast(node.children[0], indent + 1)
         else:
             print(f"{indent_str}  {node.value}")
+    elif node.type == ASTNodeType.EXPRESSION:
+        if node.children:
+            print(f"{indent_str}{node.type}: {node.value}")
+            for child in node.children:
+                pretty_print_ast(child, indent + 1)
+        else:
+            print(f"{indent_str}{node.type}: {node.value}")
+    elif node.type == ASTNodeType.VARIABLE_DECLARATION:
+        print(f"{indent_str}{node.type}: {node.value}")
+        for child in node.children:
+            pretty_print_ast(child, indent + 1)
+    elif node.type == ASTNodeType.FUNCTION_CALL:
+        print(f"{indent_str}{node.type}: {node.value}")
+        for child in node.children:
+            pretty_print_ast(child, indent + 1)
+    elif node.type == ASTNodeType.PRINT_STATEMENT:
+        print(f"{indent_str}{node.type}")
+        for child in node.children:
+            pretty_print_ast(child, indent + 1)
     else:
         print(f"{indent_str}{node.type}: {node.value}")
         for child in node.children:
