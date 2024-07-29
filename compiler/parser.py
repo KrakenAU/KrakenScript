@@ -2,32 +2,7 @@ import re
 from enum import Enum, auto
 from lexer import TokenType, Token, lex
 import colorama
-
-class ASTNodeType(Enum):
-    PROGRAM = auto()
-    FUNCTION_DECLARATION = auto()
-    NON_RETURNING_FUNCTION_DECLARATION = auto()
-    VARIABLE_DECLARATION = auto()
-    CONSTANT_DECLARATION = auto()
-    RETURN_STATEMENT = auto()
-    EXPRESSION = auto()
-    IF_STATEMENT = auto()
-    FOR_LOOP = auto()
-    PRINT_STATEMENT = auto()
-    BLOCK = auto()
-    FUNCTION_CALL = auto()
-
-class ASTNode:
-    def __init__(self, node_type, value=None):
-        self.type = node_type
-        self.value = value
-        self.children = []
-
-    def add_child(self, child):
-        self.children.append(child)
-
-    def __repr__(self):
-        return f"ASTNode({self.type}, {self.value}, children={self.children})"
+from ast_nodes import ASTNode, ASTNodeType, pretty_print_ast
 
 class Parser:
     def __init__(self, tokens, debug=False):
@@ -48,8 +23,8 @@ class Parser:
         self.position += 1
         return self.current_token()
 
-    def match(self, token_type):
-        if self.current_token() and self.current_token().type == token_type:
+    def match(self, token_type, value=None):
+        if self.current_token() and self.current_token().type == token_type and (value is None or self.current_token().value == value):
             token = self.current_token()
             self.next_token()
             self.debug_log(f"Matched {token_type}: '{token.value}'")
@@ -113,12 +88,10 @@ class Parser:
 
         self.match(TokenType.BLOCK_DELIMITER)  # ~
         body = self.parse_block()
-        self.match(TokenType.BLOCK_DELIMITER)  # ~
         
-        node = ASTNode(ASTNodeType.FUNCTION_DECLARATION if return_type else ASTNodeType.NON_RETURNING_FUNCTION_DECLARATION, name)
+        node = ASTNode(ASTNodeType.FUNCTION_DECLARATION, name)
         node.add_child(params)
-        if return_type:
-            node.add_child(ASTNode(ASTNodeType.EXPRESSION, return_type))
+        node.add_child(ASTNode(ASTNodeType.RETURN_TYPE, return_type or "None"))
         node.add_child(body)
 
         param_str = ", ".join([f"{p.value}: {p.children[0].value}{' = ' + str(p.children[1].value) if len(p.children) > 1 else ''}" for p in params.children])
@@ -129,7 +102,7 @@ class Parser:
     def parse_parameters(self):
         self.debug_log("Parsing parameters")
         self.indent_level += 1
-        params = ASTNode(ASTNodeType.EXPRESSION)
+        params = ASTNode(ASTNodeType.PARAMETERS)
         while self.current_token() and (self.current_token().type != TokenType.DELIMITER or self.current_token().value != ")"):
             param_name = self.match(TokenType.IDENTIFIER)
             if not param_name:
@@ -138,16 +111,14 @@ class Parser:
             param_type = self.match(TokenType.IDENTIFIER)
             if not param_type:
                 raise SyntaxError(f"Expected type for parameter {param_name.value}")
-            default_value = None
+            param_node = ASTNode(ASTNodeType.PARAMETER, param_name.value)
+            param_node.add_child(ASTNode(ASTNodeType.TYPE, param_type.value))
             if self.current_token() and self.current_token().type == TokenType.OPERATOR and self.current_token().value == "=":
                 self.match(TokenType.OPERATOR)  # =
                 default_value = self.parse_expression()
-            param_node = ASTNode(ASTNodeType.EXPRESSION, param_name.value)
-            param_node.add_child(ASTNode(ASTNodeType.EXPRESSION, param_type.value))
-            if default_value:
                 param_node.add_child(default_value)
             params.add_child(param_node)
-            self.debug_log(f"Parsed parameter: {param_name.value}: {param_type.value}{' = ' + str(default_value.value) if default_value else ''}")
+            self.debug_log(f"Parsed parameter: {param_name.value}: {param_type.value}{' = ' + str(default_value.value) if 'default_value' in locals() else ''}")
             if self.current_token() and self.current_token().type == TokenType.DELIMITER and self.current_token().value == ",":
                 self.match(TokenType.DELIMITER)  # ,
         self.indent_level -= 1
@@ -158,9 +129,7 @@ class Parser:
         self.indent_level += 1
         block_node = ASTNode(ASTNodeType.BLOCK)
         while self.current_token() and self.current_token().type != TokenType.BLOCK_DELIMITER:
-            if self.current_token().type == TokenType.COMMENT:
-                self.next_token()  # Skip comments
-            elif self.current_token().type == TokenType.KEYWORD:
+            if self.current_token().type == TokenType.KEYWORD:
                 if self.current_token().value == "return":
                     block_node.add_child(self.parse_return_statement())
                 elif self.current_token().value == "if":
@@ -172,8 +141,15 @@ class Parser:
                 elif self.current_token().value in ["let", "const"]:
                     block_node.add_child(self.parse_variable_declaration())
                 else:
+                    self.debug_log(f"Skipping unknown keyword: {self.current_token().value}")
                     self.next_token()  # Skip unknown keywords
+            elif self.current_token().type == TokenType.IDENTIFIER:
+                expression = self.parse_expression()
+                block_node.add_child(expression)
+                if self.current_token() and self.current_token().type == TokenType.DELIMITER and self.current_token().value == ";":
+                    self.next_token()  # Skip semicolon
             else:
+                self.debug_log(f"Skipping unknown token: {self.current_token().value}")
                 self.next_token()  # Skip unknown tokens
         self.indent_level -= 1
         return block_node
@@ -197,9 +173,12 @@ class Parser:
         self.indent_level += 1
         self.match(TokenType.KEYWORD)  # return
         value = self.parse_expression()
+        self.match(TokenType.DELIMITER)  # ;
         self.debug_log(f"Parsed return statement: return {value.value}")
         self.indent_level -= 1
-        return ASTNode(ASTNodeType.RETURN_STATEMENT, value)
+        return_node = ASTNode(ASTNodeType.RETURN_STATEMENT)
+        return_node.add_child(value)
+        return return_node
 
     def parse_if_statement(self):
         self.debug_log("Parsing if statement")
@@ -237,10 +216,11 @@ class Parser:
     def parse_print_statement(self):
         self.debug_log("Parsing print statement")
         self.indent_level += 1
-        self.match(TokenType.KEYWORD)  # print
-        self.match(TokenType.DELIMITER)  # (
+        self.match(TokenType.KEYWORD, "print")
+        self.match(TokenType.DELIMITER, "(")
         value = self.parse_expression()
-        self.match(TokenType.DELIMITER)  # )
+        self.match(TokenType.DELIMITER, ")")
+        self.match(TokenType.DELIMITER, ";")
         self.debug_log(f"Parsed print statement: print({value.value})")
         self.indent_level -= 1
         node = ASTNode(ASTNodeType.PRINT_STATEMENT)
@@ -249,27 +229,58 @@ class Parser:
 
     def parse_expression(self):
         self.debug_log("Parsing expression")
-        self.indent_level += 1
         token = self.current_token()
+        if token.type == TokenType.STRING:
+            self.next_token()
+            return ASTNode(ASTNodeType.EXPRESSION, token.value)
+        return self.parse_additive()
+
+    def parse_additive(self):
+        self.debug_log("Parsing additive expression")
+        left = self.parse_multiplicative()
+        while self.current_token() and self.current_token().type == TokenType.OPERATOR and self.current_token().value in ['+', '-']:
+            op = self.current_token().value
+            self.debug_log(f"Found additive operator: {op}")
+            self.next_token()
+            right = self.parse_multiplicative()
+            new_node = ASTNode(ASTNodeType.BINARY_OPERATION, op)
+            new_node.add_child(left)
+            new_node.add_child(right)
+            left = new_node
+        return left
+
+    def parse_multiplicative(self):
+        self.debug_log("Parsing multiplicative expression")
+        left = self.parse_primary()
+        while self.current_token() and self.current_token().type == TokenType.OPERATOR and self.current_token().value in ['*', '/']:
+            op = self.current_token().value
+            self.debug_log(f"Found multiplicative operator: {op}")
+            self.next_token()
+            right = self.parse_primary()
+            new_node = ASTNode(ASTNodeType.BINARY_OPERATION, op)
+            new_node.add_child(left)
+            new_node.add_child(right)
+            left = new_node
+        return left
+
+    def parse_primary(self):
+        token = self.current_token()
+        self.debug_log(f"Parsing primary expression: {token.value}")
         if token.type == TokenType.IDENTIFIER:
             self.next_token()
             if self.current_token() and self.current_token().type == TokenType.DELIMITER and self.current_token().value == "(":
-                result = self.parse_function_call(token.value)
-            else:
-                result = ASTNode(ASTNodeType.EXPRESSION, token.value)
+                return self.parse_function_call(token.value)
+            return ASTNode(ASTNodeType.EXPRESSION, token.value)
         elif token.type in [TokenType.INTEGER, TokenType.FLOAT, TokenType.STRING, TokenType.BOOLEAN]:
             self.next_token()
-            result = ASTNode(ASTNodeType.EXPRESSION, token.value)
+            return ASTNode(ASTNodeType.EXPRESSION, token.value)
         elif token.type == TokenType.DELIMITER and token.value == "(":
             self.next_token()
-            result = self.parse_expression()
-            if not self.match(TokenType.DELIMITER) or self.current_token().value != ")":
-                raise SyntaxError("Expected closing parenthesis")
+            expr = self.parse_expression()
+            self.match(TokenType.DELIMITER, ")")
+            return expr
         else:
             raise SyntaxError(f"Unexpected token in expression: {token}")
-        self.debug_log(f"Parsed expression: {result.value}")
-        self.indent_level -= 1
-        return result
 
     def parse_function_call(self, function_name):
         self.debug_log(f"Parsing function call to {function_name}")
@@ -288,50 +299,6 @@ class Parser:
         self.indent_level -= 1
         return node
 
-def pretty_print_ast(node, indent=0):
-    indent_str = "  " * indent
-    if node.type == ASTNodeType.PROGRAM:
-        print(f"{indent_str}{node.type}")
-        for child in node.children:
-            pretty_print_ast(child, indent + 1)
-    elif node.type in [ASTNodeType.FUNCTION_DECLARATION, ASTNodeType.NON_RETURNING_FUNCTION_DECLARATION]:
-        print(f"{indent_str}{node.type}: {node.value}")
-        for child in node.children:
-            pretty_print_ast(child, indent + 1)
-    elif node.type == ASTNodeType.BLOCK:
-        print(f"{indent_str}{node.type}")
-        for child in node.children:
-            pretty_print_ast(child, indent + 1)
-    elif node.type == ASTNodeType.RETURN_STATEMENT:
-        print(f"{indent_str}{node.type}")
-        if node.children:
-            pretty_print_ast(node.children[0], indent + 1)
-        else:
-            print(f"{indent_str}  {node.value}")
-    elif node.type == ASTNodeType.EXPRESSION:
-        if node.children:
-            print(f"{indent_str}{node.type}: {node.value}")
-            for child in node.children:
-                pretty_print_ast(child, indent + 1)
-        else:
-            print(f"{indent_str}{node.type}: {node.value}")
-    elif node.type == ASTNodeType.VARIABLE_DECLARATION:
-        print(f"{indent_str}{node.type}: {node.value}")
-        for child in node.children:
-            pretty_print_ast(child, indent + 1)
-    elif node.type == ASTNodeType.FUNCTION_CALL:
-        print(f"{indent_str}{node.type}: {node.value}")
-        for child in node.children:
-            pretty_print_ast(child, indent + 1)
-    elif node.type == ASTNodeType.PRINT_STATEMENT:
-        print(f"{indent_str}{node.type}")
-        for child in node.children:
-            pretty_print_ast(child, indent + 1)
-    else:
-        print(f"{indent_str}{node.type}: {node.value}")
-        for child in node.children:
-            pretty_print_ast(child, indent + 1)
-
 def parse(source_code, debug=False):
     tokens = lex(source_code, debug)
     parser = Parser(tokens, debug)
@@ -340,9 +307,8 @@ def parse(source_code, debug=False):
 # Example usage
 if __name__ == "__main__":
     sample_code = """
-    // This is a comment
     @ink calculate_pressure(depth: Float, gravity: Float = 9.8) -> Float ~
-        (* Calculate pressure at given depth *)
+
         return depth * gravity * 1000;
     ~
 
