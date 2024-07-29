@@ -137,6 +137,10 @@ class Parser:
         name = self.consume(TokenType.IDENTIFIER, "Expected variable name")
         node.add_child(ASTNode(ASTNodeType.IDENTIFIER, value=name.value))
         
+        if self.match(TokenType.COLON):
+            type_name = self.consume(TokenType.IDENTIFIER, "Expected type after ':'")
+            node.add_child(ASTNode(ASTNodeType.IDENTIFIER, value=type_name.value))
+        
         self.consume(TokenType.EQUALS, "Expected '=' after variable name")
         value = self.parse_expression()
         node.add_child(value)
@@ -150,6 +154,10 @@ class Parser:
         
         name = self.consume(TokenType.IDENTIFIER, "Expected constant name")
         node.add_child(ASTNode(ASTNodeType.IDENTIFIER, value=name.value))
+        
+        if self.match(TokenType.COLON):
+            type_name = self.consume(TokenType.IDENTIFIER, "Expected type after ':'")
+            node.add_child(ASTNode(ASTNodeType.IDENTIFIER, value=type_name.value))
         
         self.consume(TokenType.EQUALS, "Expected '=' after constant name")
         value = self.parse_expression()
@@ -431,7 +439,7 @@ var x = 10
 var y = factorial(x)
 print("Factorial of", x, "is", y)
 
-const PI = 3.14159
+const PI: float = 3.14159
 var radius = 5
 var area = PI * radius * radius
 print("Area of the circle with radius", radius, "is", area)
