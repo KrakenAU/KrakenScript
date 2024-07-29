@@ -31,6 +31,7 @@ class Lexer:
         self.position = 0
         self.line = 1
         self.column = 1
+        self.current_char = self.source_code[0] if self.source_code else None
         self.debug = debug
 
     def debug_log(self, message, color=colorama.Fore.CYAN, token_type=None):
@@ -52,8 +53,8 @@ class Lexer:
               
     def tokenize(self):
         tokens = []
-        while self.position < len(self.source_code):
-            if self.match(r'\s+'):
+        while self.current_char is not None:
+            if self.current_char.isspace():
                 self.skip_whitespace()
             elif self.source_code[self.position:self.position+2] == '(*':
                 self.tokenize_multi_line_comment(tokens)
@@ -88,8 +89,8 @@ class Lexer:
                 self.debug_log(f"Found delimiter '{self.current_match}'", token_type=TokenType.DELIMITER)
                 tokens.append(self.create_token(TokenType.DELIMITER, self.current_match))
             else:
-                self.debug_log(f"Unexpected character: {self.source_code[self.position]}", color=colorama.Fore.RED)
-                raise SyntaxError(f"Unexpected character: {self.source_code[self.position]} at line {self.line}, column {self.column}")
+                self.debug_log(f"Unexpected character: {self.current_char}", color=colorama.Fore.RED)
+                raise SyntaxError(f"Unexpected character: {self.current_char} at line {self.line}, column {self.column}")
 
         self.debug_log("Tokenization complete", color=colorama.Fore.GREEN)
         tokens.append(self.create_token(TokenType.EOF, ''))
@@ -132,24 +133,32 @@ class Lexer:
         raise SyntaxError(f"Unterminated comment starting at line {self.line}, column {self.column}")
 
     def tokenize_string(self, tokens):
-        start = self.position
-        self.position += 1  # Skip opening quote
-        self.column += 1
-        while self.position < len(self.source_code):
-            if self.source_code[self.position] == '"':
-                self.position += 1
-                self.column += 1
-                # Include the quotes in the token value
-                tokens.append(self.create_token(TokenType.STRING, self.source_code[start:self.position]))
+        start_line, start_column = self.line, self.column
+        string_content = ""
+        self.advance()  # Skip the opening quote
+        while self.current_char is not None:
+            if self.current_char == '"':
+                self.advance()  # Skip the closing quote
+                tokens.append(Token(TokenType.STRING, string_content, start_line, start_column))
                 return
-            elif self.source_code[self.position] == '\n':
-                self.line += 1
-                self.column = 1
+            elif self.current_char == '{' and self.peek() == '{':
+                # Handle string interpolation
+                self.advance()  # Skip first '{'
+                self.advance()  # Skip second '{'
+                string_content += "{{"
+                while self.current_char is not None and (self.current_char != '}' or self.peek() != '}'):
+                    string_content += self.current_char
+                    self.advance()
+                if self.current_char == '}' and self.peek() == '}':
+                    self.advance()  # Skip first '}'
+                    self.advance()  # Skip second '}'
+                    string_content += "}}"
+                else:
+                    raise SyntaxError(f"Expected '}}}}' for string interpolation at line {self.line}, column {self.column}")
             else:
-                self.column += 1
-            self.position += 1
-        
-        raise SyntaxError(f"Unterminated string starting at line {self.line}, column {self.column}")
+                string_content += self.current_char
+                self.advance()
+        raise SyntaxError(f"Unterminated string starting at line {start_line}, column {start_column}")
 
     def tokenize_multi_line_comment(self, tokens):
         start = self.position
@@ -177,6 +186,24 @@ class Lexer:
         self.position += len(str(value))
         return token
 
+    def advance(self):
+        if self.current_char == '\n':
+            self.line += 1
+            self.column = 1
+        else:
+            self.column += 1
+        self.position += 1
+        if self.position < len(self.source_code):
+            self.current_char = self.source_code[self.position]
+        else:
+            self.current_char = None
+
+    def peek(self):
+        peek_pos = self.position + 1
+        if peek_pos < len(self.source_code):
+            return self.source_code[peek_pos]
+        return None
+
 def lex(source_code, debug=False):
     lexer = Lexer(source_code, debug)
     return lexer.tokenize()
@@ -184,15 +211,37 @@ def lex(source_code, debug=False):
 # Example usage
 if __name__ == "__main__":
     sample_code = """
-    // This is a comment
+    @ink fibonacci(n: Int) -> Int ~
+        if n <= 1 ~
+            return n;
+        ~
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    ~
+
     @ink calculate_pressure(depth: Float, gravity: Float = 9.8) -> Float ~
-        (* Calculate pressure at given depth *)
-        return depth * gravity * 1000;
+        return depth * gravity / 1000;
+    ~
+
+    @ink complex_calculation(x: Float, y: Float, z: Float) -> Float ~
+        let result = (x * y) / (z + 1);
+        return result * fibonacci(5);
     ~
 
     let depth = 5000.0;
     let pressure = calculate_pressure(depth);
+
+    let x = 10.5;
+    let y = 20.7;
+    let z = 3.14;
+
+    let complex_result = complex_calculation(x, y, z);
+
+    print("Fibonacci(10): {{fibonacci(10)}}");
     print("Pressure at {{depth}}m: {{pressure}} Pa");
+    print("Complex calculation result: {{complex_result}}");
+
+    let recursive_depth = 15;
+    print("Fibonacci({{recursive_depth}}): {{fibonacci(recursive_depth)}}");
     """
 
     print("Tokenizing with debug output:")

@@ -3,6 +3,7 @@ from enum import Enum, auto
 from lexer import TokenType, Token, lex
 import colorama
 from ast_nodes import ASTNode, ASTNodeType, pretty_print_ast
+from interpreter import Interpreter
 
 class Parser:
     def __init__(self, tokens, debug=False):
@@ -305,26 +306,61 @@ def parse(source_code, debug=False):
     return parser.parse()
 
 # Example usage
+# ... (keep the existing imports and code)
+
 if __name__ == "__main__":
     sample_code = """
+    @ink fibonacci(n: Int) -> Int ~
+        if n <= 1 ~
+            return n;
+        ~
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    ~
+
     @ink calculate_pressure(depth: Float, gravity: Float = 9.8) -> Float ~
-
-        return depth * gravity * 1000;
+        return depth * gravity / 1000;
     ~
 
-    @ink test1() ~
-    ~
-
-    @ink test2(test: Float) -> Float ~
-        return test;
+    @ink complex_calculation(x: Float, y: Float, z: Float) -> Float ~
+        let result = (x * y) / (z + 1);
+        return result * fibonacci(5);
     ~
 
     let depth = 5000.0;
     let pressure = calculate_pressure(depth);
+
+    let x = 10.5;
+    let y = 20.7;
+    let z = 3.14;
+
+    let complex_result = complex_calculation(x, y, z);
+
+    let fib = fibonacci(10)
+    let recursive_depth = 15;
+    let fibonacci_result = fibonacci(recursive_depth);
+
+
+    print("Fibonacci(10): {{fib}}");
     print("Pressure at {{depth}}m: {{pressure}} Pa");
+    print("Complex calculation result: {{complex_result}}");
+
+    let recursive_depth = 15;
+    print("Fibonacci({{recursive_depth}}): {{complex_result}}");
     """
 
     print("Parsing with debug output:")
     ast = parse(sample_code, debug=True)
     print("\nParsing complete. AST:")
     pretty_print_ast(ast)
+
+    print("\nInterpreting the code:")
+    interpreter = Interpreter()
+    interpreter.interpret(ast)
+    
+    print("\nGlobal scope after interpretation:")
+    for var, value in interpreter.global_scope.items():
+        print(f"{var} = {value}")
+
+    print("\nDefined functions:")
+    for func_name in interpreter.functions:
+        print(func_name)
