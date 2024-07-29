@@ -63,6 +63,6 @@ This project adheres to the MIT License - see the [LICENSE](LICENSE) file for th
 
 **KrakenScript: Where Code Meets Cosmos**
 
-[Report Anomaly](https://github.com/krakenautomation/KrakenScript/issues) · [Request New Star Chart](https://github.com/krakenautomation/KrakenScript/issues)
+[Report Anomaly](https://github.com/krakenau/KrakenScript/issues) · [Request New Star Chart](https://github.com/krakenau/KrakenScript/issues)
 
 </div>
