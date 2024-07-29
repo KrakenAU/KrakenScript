@@ -279,9 +279,10 @@ class Parser:
         elif self.match(TokenType.BOOL):
             return ASTNode(ASTNodeType.BOOLEAN, value=self.previous().value)
         elif self.match(TokenType.IDENTIFIER):
+            identifier = self.previous().value
             if self.match(TokenType.LPAREN):
-                return self.finish_function_call(self.previous())
-            return ASTNode(ASTNodeType.IDENTIFIER, value=self.previous().value)
+                return self.finish_function_call(ASTNode(ASTNodeType.IDENTIFIER, value=identifier))
+            return ASTNode(ASTNodeType.IDENTIFIER, value=identifier)
         elif self.match(TokenType.LPAREN):
             expr = self.parse_expression()
             self.consume(TokenType.RPAREN, "Expected ')' after expression")
