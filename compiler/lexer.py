@@ -10,11 +10,12 @@ class TokenType(Enum):
     # Keywords
     VAR = auto()
     CONST = auto()
-    FUN = auto()
+    FUNC = auto()
     IF = auto()
     ELIF = auto()
     ELSE = auto()
     RETURN = auto()
+    DEDENT = auto()
     
     # Data types
     NUM = auto()
@@ -124,24 +125,24 @@ class Lexer:
 
     def identifier(self):
         start_column = self.column
-        result = ''
         while self.current_char is not None and (self.current_char.isalnum() or self.current_char == '_'):
-            result += self.current_char
             self.advance()
         
-        token_type = {
-            'var': TokenType.VAR,
-            'const': TokenType.CONST,
-            'fun': TokenType.FUN,
-            'if': TokenType.IF,
-            'elif': TokenType.ELIF,
-            'else': TokenType.ELSE,
-            'return': TokenType.RETURN,
-            'true': TokenType.BOOL,
-            'false': TokenType.BOOL
-        }.get(result, TokenType.IDENTIFIER)
+        value = self.source[self.position - (self.column - start_column):self.position]
         
-        return Token(token_type, result, self.line, start_column)
+        token_type = {
+            "var": TokenType.VAR,
+            "const": TokenType.CONST,
+            "func": TokenType.FUNC,
+            "if": TokenType.IF,
+            "elif": TokenType.ELIF,
+            "else": TokenType.ELSE,
+            "return": TokenType.RETURN,
+            "true": TokenType.BOOL,
+            "false": TokenType.BOOL
+        }.get(value, TokenType.IDENTIFIER)
+        
+        return Token(token_type, value, self.line, start_column)
 
     def number(self):
         start_column = self.column
@@ -243,3 +244,4 @@ fun subtract(a: Float, b: Float) -> Float
     return a - b
 """
     lex_and_debug(source_code)
+    

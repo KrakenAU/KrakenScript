@@ -46,7 +46,7 @@ KrakenScript supports the following data types:
 Define functions with the `func` keyword:
 
 ```
-fun hello() 
+func hello() 
     print("Hello, world!")
 
 func add(a, b) -> num
